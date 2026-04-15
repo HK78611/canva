@@ -1,0 +1,857 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Smart Glasses Era – Carousel</title>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --brand-primary: #0A0A0F;
+    --brand-accent: #6C63FF;
+    --brand-accent-warm: #FF6B35;
+    --light-bg: #F0EFF8;
+    --dark-bg: #0D0C14;
+    --text-primary: #FAFAF8;
+    --text-dark: #0A0A0F;
+    --border-accent: rgba(108,99,255,0.25);
+    --glass-overlay: rgba(108,99,255,0.08);
+
+    --font-display: 'Anton', Impact, sans-serif;
+    --font-body: 'DM Sans', sans-serif;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: #08070E;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    font-family: var(--font-body);
+    padding: 24px 16px;
+  }
+
+  /* ── Viewport wrapper ── */
+  .carousel-shell {
+    width: 100%;
+    max-width: 420px;
+    position: relative;
+    user-select: none;
+  }
+
+  /* ── Progress bar ── */
+  .progress-strip {
+    display: flex;
+    gap: 5px;
+    margin-bottom: 10px;
+    padding: 0 2px;
+  }
+  .pip {
+    flex: 1;
+    height: 3px;
+    border-radius: 99px;
+    background: rgba(255,255,255,0.15);
+    transition: background 0.35s ease;
+    overflow: hidden;
+    position: relative;
+  }
+  .pip.active::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: var(--brand-accent);
+    transform-origin: left;
+    animation: fillPip 0.4s ease forwards;
+  }
+  .pip.done { background: var(--brand-accent); }
+  @keyframes fillPip { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+
+  /* ── Slide frame ── */
+  .slide-frame {
+    width: 100%;
+    aspect-ratio: 4/5;
+    border-radius: 20px;
+    overflow: hidden;
+    position: relative;
+    box-shadow: 0 32px 80px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.05);
+  }
+
+  .slide {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    transform: translateX(60px) scale(0.97);
+    transition: opacity 0.42s cubic-bezier(.4,0,.2,1), transform 0.42s cubic-bezier(.4,0,.2,1);
+    pointer-events: none;
+    display: flex;
+    flex-direction: column;
+  }
+  .slide.active {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+    pointer-events: all;
+  }
+  .slide.exit {
+    opacity: 0;
+    transform: translateX(-60px) scale(0.97);
+    pointer-events: none;
+  }
+
+  /* ── Nav arrows ── */
+  .nav-arrows {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 14px;
+    padding: 0 2px;
+  }
+  .nav-btn {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.1);
+    color: #fff;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s, transform 0.15s;
+    flex-shrink: 0;
+  }
+  .nav-btn:hover { background: rgba(108,99,255,0.3); transform: scale(1.08); }
+  .nav-btn:disabled { opacity: 0.25; cursor: default; transform: none; }
+  .slide-counter {
+    font-family: var(--font-display);
+    font-size: 13px;
+    color: rgba(255,255,255,0.4);
+    letter-spacing: 0.12em;
+  }
+
+  /* ══════════════════════════════
+     SLIDE 1 – COVER / HOOK
+  ══════════════════════════════ */
+  .s1 {
+    background: var(--dark-bg);
+  }
+  .s1-split {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    position: relative;
+  }
+  .s1-left {
+    background: linear-gradient(160deg, #1a1825 0%, #0d0c14 100%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px 12px;
+    gap: 12px;
+    filter: saturate(0.4) brightness(0.7);
+    position: relative;
+    overflow: hidden;
+  }
+  .s1-left::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent 70%, rgba(13,12,20,0.9));
+  }
+  .phone-icon {
+    font-size: 52px;
+    opacity: 0.6;
+  }
+  .s1-right {
+    background: linear-gradient(160deg, #1c1836 0%, #0d0c14 100%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px 12px;
+    gap: 12px;
+    position: relative;
+    overflow: hidden;
+  }
+  .glasses-icon {
+    font-size: 50px;
+    position: relative;
+    z-index: 1;
+  }
+  .hud-ring {
+    width: 90px;
+    height: 90px;
+    border: 1.5px solid var(--brand-accent);
+    border-radius: 50%;
+    position: absolute;
+    animation: pulse-hud 2.5s ease-in-out infinite;
+    opacity: 0.4;
+  }
+  .hud-ring:nth-child(2) { width: 120px; height: 120px; animation-delay: 0.8s; opacity: 0.2; }
+  @keyframes pulse-hud { 0%,100%{transform:scale(1);opacity:0.4} 50%{transform:scale(1.15);opacity:0.6} }
+  .divider-glow {
+    position: absolute;
+    left: 50%;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: linear-gradient(180deg, transparent, var(--brand-accent), transparent);
+    transform: translateX(-50%);
+    opacity: 0.7;
+    z-index: 10;
+  }
+  .s1-text {
+    padding: 18px 22px 22px;
+    background: linear-gradient(0deg, #0D0C14 80%, transparent);
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    z-index: 20;
+  }
+  .s1-tag {
+    display: inline-block;
+    background: var(--brand-accent);
+    color: #fff;
+    font-family: var(--font-display);
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    padding: 4px 10px;
+    border-radius: 99px;
+    margin-bottom: 10px;
+  }
+  .s1-headline {
+    font-family: var(--font-display);
+    font-size: 22px;
+    font-weight: 800;
+    color: var(--text-primary);
+    line-height: 1.2;
+    margin-bottom: 8px;
+  }
+  .s1-headline em { color: var(--brand-accent); font-style: normal; }
+  .s1-sub {
+    font-family: var(--font-body);
+    font-size: 11px;
+    color: rgba(255,255,255,0.55);
+    line-height: 1.55;
+  }
+  .swipe-hint {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    margin-top: 10px;
+    font-size: 10px;
+    color: rgba(255,255,255,0.35);
+    font-family: var(--font-display);
+    letter-spacing: 0.1em;
+  }
+  .swipe-arrow { animation: swipe-nudge 1.6s ease-in-out infinite; display: inline-block; }
+  @keyframes swipe-nudge { 0%,100%{transform:translateX(0)} 50%{transform:translateX(5px)} }
+
+  /* ══════════════════════════════
+     SLIDE 2 – STATE OF PLAY
+  ══════════════════════════════ */
+  .s2 {
+    background: linear-gradient(160deg, #111020 0%, #0d0c14 100%);
+    padding: 28px 24px 24px;
+  }
+  .slide-num-badge {
+    font-family: var(--font-display);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--brand-accent);
+    margin-bottom: 6px;
+  }
+  .slide-headline {
+    font-family: var(--font-display);
+    font-size: 20px;
+    font-weight: 800;
+    color: var(--text-primary);
+    line-height: 1.22;
+    margin-bottom: 18px;
+  }
+  .slide-headline em { color: var(--brand-accent); font-style: normal; }
+  .logo-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 18px;
+  }
+  .logo-pill {
+    flex: 1;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid var(--border-accent);
+    border-radius: 12px;
+    padding: 10px 8px;
+    text-align: center;
+    font-family: var(--font-display);
+    font-size: 10px;
+    font-weight: 700;
+    color: rgba(255,255,255,0.7);
+    letter-spacing: 0.06em;
+  }
+  .logo-pill .lp-icon { font-size: 22px; display: block; margin-bottom: 4px; }
+  .content-card {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--border-accent);
+    border-radius: 14px;
+    padding: 16px;
+    margin-bottom: 12px;
+    flex-shrink: 0;
+  }
+  .content-card p {
+    font-size: 12.5px;
+    color: rgba(255,255,255,0.75);
+    line-height: 1.6;
+  }
+  .content-card strong { color: #fff; font-weight: 600; }
+  .open-loop {
+    margin-top: auto;
+    padding-top: 14px;
+    font-family: var(--font-display);
+    font-size: 11.5px;
+    font-weight: 700;
+    color: var(--brand-accent);
+    letter-spacing: 0.04em;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  /* ══════════════════════════════
+     SLIDE 3 – THE WAR
+  ══════════════════════════════ */
+  .s3 {
+    background: linear-gradient(140deg, #0e0d1a 0%, #100b18 50%, #0d0c14 100%);
+    padding: 28px 24px 24px;
+    position: relative;
+    overflow: hidden;
+  }
+  .s3::before {
+    content: '';
+    position: absolute;
+    top: -60px; right: -60px;
+    width: 200px; height: 200px;
+    background: radial-gradient(circle, rgba(108,99,255,0.12) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .war-logos {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    margin-bottom: 20px;
+    position: relative;
+  }
+  .war-logo {
+    width: 52px; height: 52px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    border: 2px solid rgba(255,255,255,0.1);
+    position: relative;
+  }
+  .war-logo.apple { background: linear-gradient(135deg, #2c2c2e, #1c1c1e); margin-right: -8px; z-index: 3; }
+  .war-logo.samsung { background: linear-gradient(135deg, #1a3a6e, #0d2554); z-index: 2; }
+  .war-logo.google { background: linear-gradient(135deg, #1a3a1a, #0d2b0d); margin-left: -8px; z-index: 1; }
+  .vs-text {
+    font-family: var(--font-display);
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.15em;
+    color: rgba(255,255,255,0.3);
+    padding: 0 8px;
+    z-index: 10;
+  }
+  .brand-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+  .brand-chip {
+    flex: 1;
+    border-radius: 12px;
+    padding: 12px 10px;
+    border: 1px solid;
+  }
+  .brand-chip.chip-apple { background: rgba(180,180,180,0.06); border-color: rgba(180,180,180,0.2); }
+  .brand-chip.chip-samsung { background: rgba(30,90,200,0.08); border-color: rgba(30,90,200,0.25); }
+  .brand-chip .chip-label {
+    font-family: var(--font-display);
+    font-size: 9.5px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .chip-apple .chip-label { color: rgba(200,200,200,0.9); }
+  .chip-samsung .chip-label { color: rgba(100,160,255,0.9); }
+  .brand-chip p { font-size: 11px; color: rgba(255,255,255,0.6); line-height: 1.5; }
+  .brand-chip strong { color: rgba(255,255,255,0.9); }
+
+  /* ══════════════════════════════
+     SLIDE 4 – TIMELINE
+  ══════════════════════════════ */
+  .s4 {
+    background: var(--dark-bg);
+    padding: 28px 24px 24px;
+  }
+  .timeline-bar {
+    display: flex;
+    align-items: center;
+    margin-bottom: 22px;
+    position: relative;
+  }
+  .timeline-line {
+    flex: 1;
+    height: 2px;
+    background: linear-gradient(90deg, var(--brand-accent), var(--brand-accent-warm));
+    border-radius: 99px;
+    position: relative;
+  }
+  .tl-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    border: 2px solid var(--brand-accent);
+    background: var(--dark-bg);
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+  }
+  .tl-dot.start { left: 0; background: var(--brand-accent); }
+  .tl-dot.mid { left: 50%; }
+  .tl-dot.end { right: 0; border-color: var(--brand-accent-warm); }
+  .timeline-labels {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 18px;
+    margin-top: -8px;
+  }
+  .tl-label {
+    font-family: var(--font-display);
+    font-size: 9.5px;
+    font-weight: 700;
+    color: rgba(255,255,255,0.4);
+    letter-spacing: 0.08em;
+    text-align: center;
+  }
+  .tl-label.highlight { color: var(--brand-accent-warm); }
+  .feature-list { display: flex; flex-direction: column; gap: 10px; flex: 1; }
+  .feature-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 12px;
+    padding: 12px 14px;
+  }
+  .fi-icon {
+    font-size: 20px;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+  .fi-text { flex: 1; }
+  .fi-title {
+    font-family: var(--font-display);
+    font-size: 12px;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 3px;
+  }
+  .fi-desc { font-size: 11px; color: rgba(255,255,255,0.5); line-height: 1.45; }
+
+  /* ══════════════════════════════
+     SLIDE 5 – BEHAVIOR SHIFT
+  ══════════════════════════════ */
+  .s5 {
+    background: linear-gradient(160deg, #0c0b18 0%, #120f1e 100%);
+    padding: 28px 24px 24px;
+  }
+  .big-quote {
+    background: linear-gradient(135deg, rgba(108,99,255,0.12), rgba(108,99,255,0.04));
+    border-left: 3px solid var(--brand-accent);
+    border-radius: 0 12px 12px 0;
+    padding: 14px 16px;
+    margin-bottom: 18px;
+    font-family: var(--font-display);
+    font-size: 13px;
+    font-weight: 700;
+    color: rgba(255,255,255,0.9);
+    line-height: 1.5;
+  }
+  .behavior-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    flex: 1;
+  }
+  .beh-card {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 13px;
+    padding: 14px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .beh-icon { font-size: 22px; }
+  .beh-title {
+    font-family: var(--font-display);
+    font-size: 11px;
+    font-weight: 700;
+    color: #fff;
+  }
+  .beh-desc { font-size: 10.5px; color: rgba(255,255,255,0.5); line-height: 1.45; }
+  .transition-label {
+    margin-top: 14px;
+    font-family: var(--font-display);
+    font-size: 11px;
+    font-weight: 700;
+    color: rgba(255,255,255,0.35);
+    text-align: center;
+    letter-spacing: 0.05em;
+  }
+  .transition-label span { color: var(--brand-accent); }
+
+  /* ══════════════════════════════
+     SLIDE 6 – CTA / DISCUSSION
+  ══════════════════════════════ */
+  .s6 {
+    background: linear-gradient(160deg, #0d0c16 0%, #0a091a 50%, #0d0c14 100%);
+    padding: 28px 24px 24px;
+    display: flex;
+    flex-direction: column;
+  }
+  .cta-eyebrow {
+    font-family: var(--font-display);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--brand-accent-warm);
+    margin-bottom: 8px;
+  }
+  .cta-headline {
+    font-family: var(--font-display);
+    font-size: 26px;
+    font-weight: 800;
+    color: var(--text-primary);
+    line-height: 1.15;
+    margin-bottom: 8px;
+  }
+  .cta-headline em { color: var(--brand-accent); font-style: normal; }
+  .cta-sub {
+    font-size: 12px;
+    color: rgba(255,255,255,0.5);
+    line-height: 1.55;
+    margin-bottom: 20px;
+  }
+  .stance-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+  .stance-card {
+    border-radius: 14px;
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+    transition: transform 0.2s, border-color 0.2s;
+    border: 1.5px solid;
+  }
+  .stance-card:hover { transform: translateX(4px); }
+  .stance-card.early {
+    background: rgba(108,99,255,0.1);
+    border-color: rgba(108,99,255,0.35);
+  }
+  .stance-card.privacy {
+    background: rgba(255,107,53,0.08);
+    border-color: rgba(255,107,53,0.3);
+  }
+  .stance-icon { font-size: 26px; flex-shrink: 0; }
+  .stance-text { flex: 1; }
+  .stance-label {
+    font-family: var(--font-display);
+    font-size: 12px;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 3px;
+  }
+  .stance-desc { font-size: 10.5px; color: rgba(255,255,255,0.5); line-height: 1.4; }
+  .cta-final {
+    margin-top: auto;
+    background: var(--brand-accent);
+    border-radius: 12px;
+    padding: 14px 18px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+  .cta-final-text {
+    font-family: var(--font-display);
+    font-size: 13px;
+    font-weight: 700;
+    color: #fff;
+  }
+  .cta-final-arrow {
+    font-size: 18px;
+    animation: swipe-nudge 1.8s ease-in-out infinite;
+  }
+</style>
+</head>
+<body>
+
+<div class="carousel-shell">
+  <!-- Progress bar -->
+  <div class="progress-strip" id="progressStrip">
+    <div class="pip active" data-i="0"></div>
+    <div class="pip" data-i="1"></div>
+    <div class="pip" data-i="2"></div>
+    <div class="pip" data-i="3"></div>
+    <div class="pip" data-i="4"></div>
+    <div class="pip" data-i="5"></div>
+  </div>
+
+  <!-- Slide frame -->
+  <div class="slide-frame" id="slideFrame">
+
+    <!-- SLIDE 1: HOOK -->
+    <div class="slide s1 active" data-slide="0">
+      <div class="s1-split">
+        <div class="s1-left">
+          <div class="phone-icon">📱</div>
+          <div style="font-family:var(--font-display);font-size:10px;color:rgba(255,255,255,0.4);letter-spacing:.1em;font-weight:700;position:relative;z-index:1">2007–2025</div>
+        </div>
+        <div class="divider-glow"></div>
+        <div class="s1-right">
+          <div class="hud-ring"></div>
+          <div class="hud-ring"></div>
+          <div class="glasses-icon" style="z-index:2">🥽</div>
+          <div style="font-family:var(--font-display);font-size:10px;color:rgba(108,99,255,0.9);letter-spacing:.1em;font-weight:700;z-index:2">2025→</div>
+        </div>
+      </div>
+      <div class="s1-text">
+        <div class="s1-tag">The Next Paradigm</div>
+        <div class="s1-headline">From Your Pocket<br>to Your <em>Face</em></div>
+        <div class="s1-sub">Meta started it. Samsung is preparing. Apple is entering the chat. The biggest shift in personal computing since the iPhone is starting <strong style="color:rgba(255,255,255,0.8)">now</strong>.</div>
+        <div class="swipe-hint">Swipe to explore <span class="swipe-arrow">→</span></div>
+      </div>
+    </div>
+
+    <!-- SLIDE 2: STATE OF PLAY -->
+    <div class="slide s2" data-slide="1" style="display:flex;flex-direction:column;">
+      <div class="slide-num-badge">01 — State of Play</div>
+      <div class="slide-headline">Who is <em>Winning</em><br>Today?</div>
+      <div class="logo-row">
+        <div class="logo-pill"><span class="lp-icon">👓</span>Meta<br>+ Ray-Ban</div>
+        <div class="logo-pill"><span class="lp-icon">🤖</span>AI<br>Vision</div>
+        <div class="logo-pill"><span class="lp-icon">🎙️</span>Spatial<br>Audio</div>
+      </div>
+      <div class="content-card">
+        <p><strong>Meta & Ray-Ban Gen 2</strong> proved the concept. People want AI, cameras, and audio in <strong>familiar form factors</strong>.</p>
+      </div>
+      <div class="content-card">
+        <p>The <strong>Killer App:</strong> "Look and Ask" multimodal AI — <em style="color:rgba(255,255,255,0.5)">"Meta, translate that French menu for me."</em> AI on your face doesn't have to look weird.</p>
+      </div>
+      <div class="open-loop">The incumbents are not sleeping… <span>→</span></div>
+    </div>
+
+    <!-- SLIDE 3: THE WAR -->
+    <div class="slide s3" data-slide="2" style="display:flex;flex-direction:column;">
+      <div class="slide-num-badge">02 — The Ecosystem War</div>
+      <div class="slide-headline">Samsung & Apple:<br><em>The Big Relaunch</em></div>
+      <div class="war-logos" style="margin-bottom:16px">
+        <div class="war-logo apple">🍎</div>
+        <div class="vs-text">VS</div>
+        <div class="war-logo samsung" style="font-size:18px;color:#4A9EFF;font-weight:800;font-family:var(--font-display)">S</div>
+        <div class="vs-text">+</div>
+        <div class="war-logo google" style="font-size:18px">G</div>
+      </div>
+      <div class="brand-row" style="flex:1">
+        <div class="brand-chip chip-apple">
+          <div class="chip-label">🍎 Apple</div>
+          <p><strong>Apple Glass (N50)</strong>: Premium acetate. Deep <strong>Apple Intelligence</strong> integration. No screen — but the <strong>best AI assistant</strong>.</p>
+        </div>
+        <div class="brand-chip chip-samsung">
+          <div class="chip-label">🤖 Samsung + Google</div>
+          <p>Co-developing an Android XR Platform with <strong>Gemini multimodal AI</strong>. Targeting late 2026/2027 launch.</p>
+        </div>
+      </div>
+      <div class="open-loop" style="margin-top:12px">What changes in the next 12 months? <span>→</span></div>
+    </div>
+
+    <!-- SLIDE 4: TIMELINE -->
+    <div class="slide s4" data-slide="3" style="display:flex;flex-direction:column;">
+      <div class="slide-num-badge">03 — 12-Month Horizon</div>
+      <div class="slide-headline">What Changes<br>by <em>April 2027?</em></div>
+      <div class="timeline-bar">
+        <div class="timeline-line">
+          <div class="tl-dot start"></div>
+          <div class="tl-dot mid"></div>
+          <div class="tl-dot end"></div>
+        </div>
+      </div>
+      <div class="timeline-labels">
+        <div class="tl-label">NOW</div>
+        <div class="tl-label">6 MO</div>
+        <div class="tl-label highlight">APR '27</div>
+      </div>
+      <div class="feature-list">
+        <div class="feature-item">
+          <div class="fi-icon">🔊</div>
+          <div class="fi-text">
+            <div class="fi-title">Spatial Audio Navigation</div>
+            <div class="fi-desc">Directions whispered in your ear as you walk. No screen needed.</div>
+          </div>
+        </div>
+        <div class="feature-item">
+          <div class="fi-icon">💬</div>
+          <div class="fi-text">
+            <div class="fi-title">Invisible Computing</div>
+            <div class="fi-desc">You won't "search." You will ask — and get answers without opening an app.</div>
+          </div>
+        </div>
+        <div class="feature-item">
+          <div class="fi-icon">👁️</div>
+          <div class="fi-text">
+            <div class="fi-title">Always-On Vision</div>
+            <div class="fi-desc">Glasses recognise faces and nudge you with names + context in real time.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 5: BEHAVIOR -->
+    <div class="slide s5" data-slide="4" style="display:flex;flex-direction:column;">
+      <div class="slide-num-badge">04 — The Behavior Shift</div>
+      <div class="slide-headline">Life Without<br><em>The Screen</em></div>
+      <div class="big-quote">"We are moving from a destination device to an integrated environment."</div>
+      <div class="behavior-grid">
+        <div class="beh-card">
+          <div class="beh-icon">👆</div>
+          <div class="beh-title">Stop Looking Down</div>
+          <div class="beh-desc">Regain eye contact with the world while staying connected via audio.</div>
+        </div>
+        <div class="beh-card">
+          <div class="beh-icon">🙌</div>
+          <div class="beh-title">Hands-Free</div>
+          <div class="beh-desc">No typing. Only conversing — naturally, in context.</div>
+        </div>
+        <div class="beh-card">
+          <div class="beh-icon">📍</div>
+          <div class="beh-title">Context-Aware</div>
+          <div class="beh-desc">Your glasses know your calendar, location, and surroundings — simultaneously.</div>
+        </div>
+        <div class="beh-card">
+          <div class="beh-icon">☕</div>
+          <div class="beh-title">Proactive AI</div>
+          <div class="beh-desc">"You have time to stop at your favourite coffee shop on this route."</div>
+        </div>
+      </div>
+      <div class="transition-label"><span>Pocket Device</span> → <span>Face Computer</span></div>
+    </div>
+
+    <!-- SLIDE 6: CTA -->
+    <div class="slide s6" data-slide="5">
+      <div class="cta-eyebrow">Your Turn</div>
+      <div class="cta-headline">Where Do<br>You <em>Stand?</em></div>
+      <div class="cta-sub">The hardware war is locked in. iOS vs Android is about to collide on our faces. The only question left is — which side are you on?</div>
+      <div class="stance-cards">
+        <div class="stance-card early">
+          <div class="stance-icon">🚀</div>
+          <div class="stance-text">
+            <div class="stance-label">Early Adopter</div>
+            <div class="stance-desc">Ready to put the phone down and embrace the face computer era.</div>
+          </div>
+        </div>
+        <div class="stance-card privacy">
+          <div class="stance-icon">🔒</div>
+          <div class="stance-text">
+            <div class="stance-label">Privacy Skeptic</div>
+            <div class="stance-desc">Concerned about always-on cameras and ambient data collection.</div>
+          </div>
+        </div>
+      </div>
+      <div class="cta-final">
+        <div class="cta-final-text">Drop your take in the comments 👇</div>
+        <div class="cta-final-arrow">💬</div>
+      </div>
+    </div>
+
+  </div><!-- /slide-frame -->
+
+  <!-- Nav -->
+  <div class="nav-arrows">
+    <button class="nav-btn" id="btnPrev" disabled>←</button>
+    <span class="slide-counter" id="counter">1 / 6</span>
+    <button class="nav-btn" id="btnNext">→</button>
+  </div>
+</div>
+
+<script>
+  const slides = document.querySelectorAll('.slide');
+  const pips = document.querySelectorAll('.pip');
+  const counter = document.getElementById('counter');
+  const btnPrev = document.getElementById('btnPrev');
+  const btnNext = document.getElementById('btnNext');
+  const total = slides.length;
+  let current = 0;
+
+  function goTo(next) {
+    if (next < 0 || next >= total) return;
+    slides[current].classList.remove('active');
+    slides[current].classList.add('exit');
+    setTimeout(() => slides[current === next ? next : current].classList.remove('exit'), 420);
+
+    pips[current].classList.remove('active');
+    pips[current].classList.add('done');
+    if (next < current) {
+      for (let i = next; i < current; i++) { pips[i].classList.remove('done'); }
+    }
+
+    current = next;
+    slides[current].classList.remove('exit');
+    slides[current].classList.add('active');
+
+    // Force re-trigger animation for active pip
+    pips[current].classList.remove('active', 'done');
+    void pips[current].offsetWidth;
+    pips[current].classList.add('active');
+
+    counter.textContent = `${current + 1} / ${total}`;
+    btnPrev.disabled = current === 0;
+    btnNext.disabled = current === total - 1;
+  }
+
+  btnPrev.addEventListener('click', () => goTo(current - 1));
+  btnNext.addEventListener('click', () => goTo(current + 1));
+
+  // Touch/swipe support
+  let startX = 0;
+  const frame = document.getElementById('slideFrame');
+  frame.addEventListener('touchstart', e => { startX = e.touches[0].clientX; }, { passive: true });
+  frame.addEventListener('touchend', e => {
+    const dx = e.changedTouches[0].clientX - startX;
+    if (Math.abs(dx) > 40) dx < 0 ? goTo(current + 1) : goTo(current - 1);
+  }, { passive: true });
+
+  // Keyboard
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight') goTo(current + 1);
+    if (e.key === 'ArrowLeft') goTo(current - 1);
+  });
+</script>
+</body>
+</html>
